@@ -13,22 +13,70 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class FileFinder {
 
-    public static Map<String, String> allEvents = new HashMap<>();
+    public static HashMap<String, String> allEvents = new HashMap<>();
     //EventName, JS File
+    public static HashMap<String, String> allJSFiles = new HashMap<>();
+    //Filename, Content
+
+    public static void reloadJS(File dataFolder) {
+        File scriptsDir = new File(dataFolder, "scripts");
+        scriptsDir.mkdir();
+        FilenameFilter jsFilter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".js") && !name.startsWith("#");
+            }
+        };
+        // Get all files matching the filter
+        File[] jsFiles = scriptsDir.listFiles(jsFilter);
+        Thread fileReaderThread = new Thread(() -> {
+            if (jsFiles != null) {
+                for (File file : jsFiles) {
+                    CustomLog.log("Reading file: " + file.getName());
+                    try {
+                        // Read all lines from the file
+                        List<String> lines = Files.readAllLines(Paths.get(file.getAbsolutePath()));
+
+                        // Join the lines into a single string
+                        String content = String.join("\n", lines);
+
+                        // Store the filename and content in the HashMap
+                        allJSFiles.put(file.getName(), content);
+                        CustomLog.log("Read file: " + file.getName());
+                        CustomLog.log("Content: " + content);
+                    } catch (IOException e) {
+                        CustomLog.log("Error reading file: " + file.getName());
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                CustomLog.log("No JavaScript files found or the folder doesn't exist.");
+            }
+        });
+
+        fileReaderThread.start();
+
+        // Wait for the thread to finish (optional)
+        try {
+            fileReaderThread.join();
+        } catch (InterruptedException e) {
+            CustomLog.log(e.getMessage());
+        }
+    }
 
     public class Events {
 
         public static void reloadEvents(File dataFolder) {
             CustomLog.log("Reloading Events...");
+            dataFolder.mkdir();
             File eventsFile = new File(dataFolder, "events.yml");
             allEvents = parseEventsYamlFile(eventsFile);
         }
@@ -59,9 +107,20 @@ public class FileFinder {
             event.put("entityDeath", EntityDeathEvent.class);
         }
 
-        public static Map<String,String> parseEventsYamlFile(File yamlFile) {
+        public static HashMap<String,String> parseEventsYamlFile(File yamlFile) {
             if (!yamlFile.exists()) {
-                CustomLog.log("YAML file does not exist: " + yamlFile.getPath());
+                CustomLog.log("YAML file does not exist, creating: " + yamlFile.getPath());
+
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(yamlFile))) {
+                    writer.write("#example\n"); // Write content to the file
+                    writer.write("# -playerLogin: playerlogin.js\n"); // Write content to the file
+                    writer.write("# NO Subfolders Supported!!!!"); // Write content to the file
+                    writer.write("# Remove all comments, not supported!!!!"); // Write content to the file
+                    CustomLog.log("File created successfully!");
+                } catch (IOException e) {
+                    CustomLog.log("An error occurred: " + e.getMessage());
+                }
+
                 return new HashMap<String,String>();
             }
 
@@ -73,7 +132,7 @@ public class FileFinder {
                 List<Map<String, String>> yamlList = yaml.load(inputStream);
 
                 // Iterate over the list and process each entry
-                Map<String,String> events_save = new HashMap<String, String>();
+                HashMap<String,String> events_save = new HashMap<String, String>();
                 for (Map<String, String> map : yamlList) {
                     for (String key : map.keySet()) {
                         String value = map.get(key);
@@ -83,7 +142,7 @@ public class FileFinder {
                 }
             } catch (Exception e) {
                 CustomLog.log("Error reading YAML file: " + e.getMessage());
-                e.printStackTrace();
+                CustomLog.log("Check your File Structure.");
             }
             return new HashMap<String,String>();
         }

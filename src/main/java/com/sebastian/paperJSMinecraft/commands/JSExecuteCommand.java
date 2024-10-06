@@ -1,5 +1,7 @@
-package com.sebastian.paperJSMinecraft;
+package com.sebastian.paperJSMinecraft.commands;
 
+import com.sebastian.paperJSMinecraft.CustomLog;
+import com.sebastian.paperJSMinecraft.JSExecute;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
