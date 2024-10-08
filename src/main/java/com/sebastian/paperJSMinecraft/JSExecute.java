@@ -43,8 +43,11 @@ public class JSExecute {
         //return "Not working, unknown error!";
     }
 
-    public String executeEvent(String jsCode, Event event) {
+    public <T extends Event> String executeEvent(String jsCode, T event) {
         // Rhino Context erstellen
+
+        if(jsCode == null) return "No JS Code.";
+
         Context context = Context.enter();
 
         CustomLog.log("Code was executed; " + jsCode);

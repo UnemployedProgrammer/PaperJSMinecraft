@@ -3,4 +3,4 @@ version: '1.0-BETA'
 main: com.sebastian.paperJSMinecraft.PaperJSMinecraft
 api-version: '1.21'
 authors: [ Sebastian ]
-description: Kube JS but as Plugin!
+description: KubeJS but as Plugin!

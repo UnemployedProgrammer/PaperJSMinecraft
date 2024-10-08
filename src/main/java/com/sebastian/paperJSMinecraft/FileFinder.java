@@ -6,7 +6,7 @@ import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
-import org.bukkit.event.Event;
+import io.papermc.paper.event.player.PlayerPickItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -28,6 +28,7 @@ public class FileFinder {
     //Filename, Content
 
     public static void reloadJS(File dataFolder) {
+        allJSFiles.clear();
         File scriptsDir = new File(dataFolder, "scripts");
         scriptsDir.mkdir();
         FilenameFilter jsFilter = new FilenameFilter() {
@@ -75,14 +76,15 @@ public class FileFinder {
     public class Events {
 
         public static void reloadEvents(File dataFolder) {
+            allEvents.clear();
             CustomLog.log("Reloading Events...");
             dataFolder.mkdir();
             File eventsFile = new File(dataFolder, "events.yml");
             allEvents = parseEventsYamlFile(eventsFile);
         }
 
-        public static void eventFromString() {
-            HashMap<String, Class> event = new HashMap<>();
+        public static String eventFromString(Class<?> clazz) {
+            HashMap<String, Class<?>> event = new HashMap<>();
             //Tick
             event.put("tickEventStart", ServerTickStartEvent.class);
             event.put("tickEventEnd", ServerTickEndEvent.class);
@@ -105,6 +107,33 @@ public class FileFinder {
             event.put("entityMove", EntityMoveEvent.class);
             event.put("entityJump", EntityJumpEvent.class);
             event.put("entityDeath", EntityDeathEvent.class);
+
+            // Iterate over the entries of the map
+            for (Map.Entry<String, Class<?>> entry : event.entrySet()) {
+                //CustomLog.log("Entry!");
+                //CustomLog.log(entry.getValue().getName() + " == " + clazz.getName());
+                if (entry.getValue().getSimpleName().equals(clazz.getSimpleName())) {
+                    CustomLog.log("");
+                    boolean log = true;  // Default to true, TEMP-DISABLED!
+
+                    // Set log to false for specific events that should not be logged
+                    if (entry.getKey().equals("tickEventStart") ||
+                            entry.getKey().equals("tickEventEnd") ||
+                            entry.getKey().equals("entityMove") ||
+                            entry.getKey().equals("playerMove") ||
+                            entry.getKey().equals("playerVelocity") ||
+                            entry.getKey().equals("entityJump") ||
+                            entry.getKey().equals("playerJump")) {
+                        log = false;
+                    }
+                    if(log) {
+                        CustomLog.log(entry.getKey() + " requested Key for Event-Trigger!");
+                    }
+                    return entry.getKey();  // Return the matching string key
+                }
+            }
+
+            return "noClassFoundErr";
         }
 
         public static HashMap<String,String> parseEventsYamlFile(File yamlFile) {
@@ -116,6 +145,7 @@ public class FileFinder {
                     writer.write("# -playerLogin: playerlogin.js\n"); // Write content to the file
                     writer.write("# NO Subfolders Supported!!!!"); // Write content to the file
                     writer.write("# Remove all comments, not supported!!!!"); // Write content to the file
+                    writer.write("# One file per event!"); // Write content to the file
                     CustomLog.log("File created successfully!");
                 } catch (IOException e) {
                     CustomLog.log("An error occurred: " + e.getMessage());
@@ -124,27 +154,42 @@ public class FileFinder {
                 return new HashMap<String,String>();
             }
 
+            HashMap<String, String> events_save = new HashMap<>();
+
             try (InputStream inputStream = new FileInputStream(yamlFile)) {
                 // Initialize SnakeYAML
                 Yaml yaml = new Yaml();
 
-                // Parse the YAML file into a List of Maps
-                List<Map<String, String>> yamlList = yaml.load(inputStream);
+                // Load the YAML file (this could be either a Map or a List)
+                Object loadedYaml = yaml.load(inputStream);
 
-                // Iterate over the list and process each entry
-                HashMap<String,String> events_save = new HashMap<String, String>();
-                for (Map<String, String> map : yamlList) {
-                    for (String key : map.keySet()) {
-                        String value = map.get(key);
-                        CustomLog.log("Event: " + key + ", Filename: " + value);
-                        events_save.put(key,value);
+                if (loadedYaml instanceof List) {
+                    // Case when YAML root is a List of Maps
+                    List<Map<String, String>> yamlList = (List<Map<String, String>>) loadedYaml;
+                    for (Map<String, String> map : yamlList) {
+                        for (String key : map.keySet()) {
+                            String value = map.get(key);
+                            CustomLog.log("Event: " + key + ", Filename: " + value);
+                            events_save.put(key, value);
+                        }
                     }
+                } else if (loadedYaml instanceof Map) {
+                    // Case when YAML root is a Map
+                    Map<String, String> yamlMap = (Map<String, String>) loadedYaml;
+                    for (String key : yamlMap.keySet()) {
+                        String value = yamlMap.get(key);
+                        CustomLog.log("Event: " + key + ", Filename: " + value);
+                        events_save.put(key, value);
+                    }
+                } else {
+                    CustomLog.log("Unexpected YAML structure");
                 }
             } catch (Exception e) {
                 CustomLog.log("Error reading YAML file: " + e.getMessage());
-                CustomLog.log("Check your File Structure.");
+                e.printStackTrace();
             }
-            return new HashMap<String,String>();
+
+            return events_save;
         }
     }
 }
