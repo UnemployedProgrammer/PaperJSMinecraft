@@ -113,7 +113,7 @@ public class FileFinder {
                 //CustomLog.log("Entry!");
                 //CustomLog.log(entry.getValue().getName() + " == " + clazz.getName());
                 if (entry.getValue().getSimpleName().equals(clazz.getSimpleName())) {
-                    CustomLog.log("");
+                    //CustomLog.log("");
                     boolean log = true;  // Default to true, TEMP-DISABLED!
 
                     // Set log to false for specific events that should not be logged
@@ -170,7 +170,7 @@ public class FileFinder {
                         for (String key : map.keySet()) {
                             String value = map.get(key);
                             CustomLog.log("Event: " + key + ", Filename: " + value);
-                            events_save.put(key, value);
+                            events_save.put(key.replace("-",""), value);
                         }
                     }
                 } else if (loadedYaml instanceof Map) {
@@ -179,7 +179,7 @@ public class FileFinder {
                     for (String key : yamlMap.keySet()) {
                         String value = yamlMap.get(key);
                         CustomLog.log("Event: " + key + ", Filename: " + value);
-                        events_save.put(key, value);
+                        events_save.put(key.replace("-",""), value);
                     }
                 } else {
                     CustomLog.log("Unexpected YAML structure");

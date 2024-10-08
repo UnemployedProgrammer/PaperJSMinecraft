@@ -87,8 +87,8 @@ public class Events implements Listener {
         String eventString = FileFinder.Events.eventFromString(event.getClass());
         CustomLog.log("Event-String: " + eventString);
         FileFinder.allJSFiles.forEach((key, value) -> {
-            CustomLog.log("Found JS!");
-            if(Objects.equals(eventString, key)) {
+            CustomLog.log(FileFinder.allEvents.get(eventString));
+            if(Objects.equals(FileFinder.allEvents.get(eventString), key)) {
                 CustomLog.log("Executing...");
                 String result = new JSExecute().executeEvent(value, event);
                 CustomLog.log(event.getEventName() + " fired, result: " + result);
